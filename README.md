@@ -106,7 +106,7 @@ Contributions to the YouTube Downloader project are welcome. Please feel free to
 
 ## License
 
-[Specify your license here, e.g., MIT, GPL, etc.]
+[MIT.]
 
 ## Disclaimer
 
