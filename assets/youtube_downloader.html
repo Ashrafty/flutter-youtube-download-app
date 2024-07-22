@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #bb86fc;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 5px;
+            background-color: #3a3a3a;
+            color: #ffffff;
+        }
+        button {
+            background-color: #bb86fc;
+            color: #000000;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #9965f4;
+        }
+        #status {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        #formatsList {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+        .format-option {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: #3a3a3a;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .format-option:hover {
+            background-color: #4a4a4a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>YouTube Downloader</h1>
+        <input type="text" id="url" placeholder="Enter YouTube URL">
+        <button onclick="getFormats()">Get Formats</button>
+        <div id="formatsList"></div>
+        <button onclick="downloadVideo()" id="downloadBtn" disabled>Download</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let selectedFormat = '';
+
+        function getFormats() {
+            const url = document.getElementById('url').value;
+            const status = document.getElementById('status');
+            const formatsList = document.getElementById('formatsList');
+
+            status.textContent = 'Fetching available formats...';
+            formatsList.innerHTML = '';
+
+            // Call the Flutter-side function to get formats
+            window.chrome.webview.postMessage(JSON.stringify({type: 'getFormats', url: url}));
+        }
+
+        function selectFormat(index) {
+            selectedFormat = index;
+            document.getElementById('downloadBtn').disabled = false;
+            const formatOptions = document.getElementsByClassName('format-option');
+            for (let i = 0; i < formatOptions.length; i++) {
+                formatOptions[i].style.backgroundColor = i === index ? '#bb86fc' : '#3a3a3a';
+            }
+        }
+
+        function downloadVideo() {
+            const url = document.getElementById('url').value;
+            const status = document.getElementById('status');
+
+            status.textContent = 'Downloading...';
+
+            // Call the Flutter-side function to download the video
+            window.chrome.webview.postMessage(JSON.stringify({type: 'downloadVideo', url: url, formatIndex: selectedFormat}));
+        }
+
+        // Listen for messages from Flutter
+        window.chrome.webview.addEventListener('message', event => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'formats') {
+                const formatsList = document.getElementById('formatsList');
+                formatsList.innerHTML = '';
+                message.formats.forEach((format, index) => {
+                    const formatOption = document.createElement('div');
+                    formatOption.className = 'format-option';
+                    formatOption.textContent = format;
+                    formatOption.onclick = () => selectFormat(index);
+                    formatsList.appendChild(formatOption);
+                });
+                document.getElementById('status').textContent = '';
+            } else if (message.type === 'downloadComplete') {
+                document.getElementById('status').textContent = message.success ? 'Download complete!' : 'Download failed: ' + message.error;
+            }
+        });
+    </script>
+</body>
+</html>
